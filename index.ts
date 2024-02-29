@@ -27,8 +27,12 @@ async function main() {
         console.log("DB filled with data");
     }
 
-    await showDB(db);
-    db.close();
+    showDB(db)
+    .then((result) => {
+        console.log(result);
+    })
+    .catch(() => { console.error("Oopsie!"); })
+    .finally(() => { db.close(); });
 /*
     db.query(`SELECT
     (SELECT count(*) FROM films) AS films,
@@ -105,16 +109,21 @@ async function fillinDB(db: PGlite): Promise<void> {
     `);
 }
 
-async function showDB(db: PGlite) {
-    const average = await db.query(`SELECT AVG(duree) AS duree_moyenne FROM films;`);
-    console.log(average);
-    const films = await db.query(`
-        SELECT f.titre, r.prenom || ' ' || r.nom AS realisateur
-        FROM films f
-        JOIN films_realisateurs fr ON f.film_id = fr.film_id
-        JOIN realisateurs r ON r.realisateur_id = fr.realisateur_id;
-    `)
-    console.log(films);
+async function showDB(db: PGlite): Promise<{average: any, films: any}>{
+    const [averageResult, filmsResult] = await Promise.all([
+        db.query(`SELCT AVG(duree) AS duree_moyenne FROM films;`),
+        db.query(`
+            SELCT f.titre, r.prenom || ' ' || r.nom AS realisateur
+            FROM films f
+            JOIN films_realisateurs fr ON f.film_id = fr.film_id
+            JOIN realisateurs r ON r.realisateur_id = fr.realisateur_id;
+        `),
+      ]);
+
+      return {
+        average: averageResult,
+        films: filmsResult,
+      };
 }
 
 main().catch(console.error);
