@@ -2,17 +2,95 @@ import { PGlite } from "@electric-sql/pglite";
 import { init_file } from './file_tools.ts';
 import * as path from 'path';
 import { mkdir } from "node:fs/promises";
+import type { OverrideKeyword } from "typescript";
+
+interface counts {
+    films: number;
+    realisateurs: number,
+    films_realisateurs: number;
+}
 
 const db_path = ".db/pglite";
-console.log("Hello from Bun pglite demo!");
 
 async function main() {
+    console.log("Hello from Bun pglite demo!");
+
     //await init_file(db_path);
     await mkdir(path.dirname(db_path), { recursive: true });
     const db = new PGlite(db_path);
-    console.log(path.dirname(db_path));
-    await db.query("select 'Hello world' as message;");
-    console.log("Hello via Bun pglite demo!");
+    /*
+    await db.query(`
+CREATE TABLE films (
+    film_id SERIAL PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    description TEXT,
+    annee_sortie INTEGER,
+    duree INTEGER, -- Durée du film en minutes
+    langue VARCHAR(50)
+);
+`);
+
+    await db.query(`
+CREATE TABLE realisateurs (
+    realisateur_id SERIAL PRIMARY KEY,
+    prenom VARCHAR(255) NOT NULL,
+    nom VARCHAR(255) NOT NULL,
+    pays VARCHAR(100),
+    date_naissance DATE
+);
+`);
+
+    await db.query(`
+CREATE TABLE films_realisateurs (
+    film_id INTEGER NOT NULL,
+    realisateur_id INTEGER NOT NULL,
+    FOREIGN KEY (film_id) REFERENCES films (film_id),
+    FOREIGN KEY (realisateur_id) REFERENCES realisateurs (realisateur_id),
+    PRIMARY KEY (film_id, realisateur_id)
+);
+`);
+
+    await db.query(`
+INSERT INTO realisateurs (prenom, nom, pays, date_naissance) VALUES
+('Quentin', 'Tarantino', 'USA', '1963-03-27'),
+('Hayao', 'Miyazaki', 'Japon', '1941-01-05');
+`);
+
+    await db.query(`
+INSERT INTO films (titre, description, annee_sortie, duree, langue) VALUES
+('Pulp Fiction', 'Les vies de deux hommes de main de la mafia, d''un boxeur, d''un gangster et de sa femme, et de deux braqueurs se tissent dans quatre histoires de violence et de rédemption.', 1994, 154, 'Anglais'),
+('Le Voyage de Chihiro', 'Dans le Japon moderne, Chihiro, une fille de dix ans, se retrouve plongée dans un monde fantastique après que ses parents aient été transformés en cochons par une sorcière maléfique.', 2001, 125, 'Japonais');
+`);
+
+    await db.query(`
+INSERT INTO films_realisateurs (film_id, realisateur_id) VALUES
+((SELECT film_id FROM films WHERE titre = 'Pulp Fiction'), (SELECT realisateur_id FROM realisateurs WHERE nom = 'Tarantino')),
+((SELECT film_id FROM films WHERE titre = 'Le Voyage de Chihiro'), (SELECT realisateur_id FROM realisateurs WHERE nom = 'Miyazaki'));
+`);
+*/
+    //const tables = await db.query(`SELECT COUNT(*) FROM films;`);
+    // Liste de tous les films avec leur langue
+    
+
+    db.query(`SELECT
+    (SELECT count(*) FROM films) AS films,
+    (SELECT count(*) FROM realisateurs) AS realisateurs,
+    (SELECT COUNT(*) FROM films_realisateurs) AS films_realisateurs;
+    `).then((result: unknown) => {
+        const data = result as counts[];
+        if (data[0].films > 0 && data[0].realisateurs > 0 && data[0].films_realisateurs > 0) {
+            db.query(`SELECT AVG(duree) AS duree_moyenne FROM films;`).then(console.log);
+            db.query(`
+                SELECT f.titre, r.prenom || ' ' || r.nom AS realisateur
+                FROM films f
+                JOIN films_realisateurs fr ON f.film_id = fr.film_id
+                JOIN realisateurs r ON r.realisateur_id = fr.realisateur_id;
+            `).then((result) => {
+                console.log(result);
+                db.close();
+            }); 
+        }
+    });
 }
 
 main().catch(console.error);
