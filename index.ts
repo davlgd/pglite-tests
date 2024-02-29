@@ -33,26 +33,6 @@ async function main() {
     })
     .catch(() => { console.error("Oopsie!"); })
     .finally(() => { db.close(); });
-/*
-    db.query(`SELECT
-    (SELECT count(*) FROM films) AS films,
-    (SELECT count(*) FROM realisateurs) AS realisateurs,
-    (SELECT COUNT(*) FROM films_realisateurs) AS films_realisateurs;
-    `).then((result: unknown) => {
-        const data = result as counts[];
-        if (data[0].films > 0 && data[0].realisateurs > 0 && data[0].films_realisateurs > 0) {
-            db.query(`SELECT AVG(duree) AS duree_moyenne FROM films;`).then(console.log);
-            db.query(`
-                SELECT f.titre, r.prenom || ' ' || r.nom AS realisateur
-                FROM films f
-                JOIN films_realisateurs fr ON f.film_id = fr.film_id
-                JOIN realisateurs r ON r.realisateur_id = fr.realisateur_id;
-            `).then((result) => {
-                console.log(result);
-                db.close();
-            }).catch(() => {
-            console.log("DB is empty, creating tables and inserting data...");
-*/
 }
 
 async function checkDB(db: PGlite): Promise<boolean> {
